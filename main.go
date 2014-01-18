@@ -172,6 +172,11 @@ func main() {
 
 	flag.Parse()
 
+	if flag.NArg() == 0 {
+		flag.Usage()
+		return
+	}
+
 	args := flag.Args()
 
 	method := "GET"
