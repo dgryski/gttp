@@ -172,6 +172,11 @@ func main() {
 
 	flag.Parse()
 
+	if flag.NArg() == 0 {
+		flag.Usage()
+		return
+	}
+
 	args := flag.Args()
 
 	method := "GET"
@@ -179,7 +184,8 @@ func main() {
 		method = "POST"
 	}
 
-	if args[0] == "GET" || args[0] == "POST" || args[0] == "PUT" || args[0] == "DELETE" {
+	switch args[0] {
+	case "GET", "HEAD", "POST", "PUT", "DELETE":
 		method = args[0]
 		args = args[1:]
 	}
