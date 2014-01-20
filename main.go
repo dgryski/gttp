@@ -258,9 +258,8 @@ func main() {
 	}
 
 	defaultHeaders := map[string]string{
-		"User-Agent":      "gttp http for gophers",
-		"Accept-Encoding": "gzip, deflate, compress",
-		"Accept":          "*/*",
+		"User-Agent": "gttp http for gophers",
+		"Accept":     "*/*",
 	}
 
 	for k, v := range defaultHeaders {
