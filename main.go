@@ -282,7 +282,7 @@ func main() {
 	response, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		log.Fatal("error during fetch: ", err)
+		log.Fatal("error during fetch:", err)
 	}
 
 	if !*onlyBody {
