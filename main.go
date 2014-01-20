@@ -286,17 +286,14 @@ func main() {
 	}
 
 	if !*onlyBody {
-
-		body, _ = ioutil.ReadAll(response.Body)
-		response.Body.Close()
-
 		dump, _ := httputil.DumpResponse(response, false)
 		os.Stdout.Write(dump)
 		os.Stdout.Write([]byte{'\n'})
-
 	}
 
 	if !*onlyHeaders {
+		body, _ = ioutil.ReadAll(response.Body)
+		response.Body.Close()
 
 		if strings.HasPrefix(response.Header.Get("Content-type"), "application/json") {
 			var j interface{}
