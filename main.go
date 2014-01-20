@@ -22,6 +22,7 @@ TODO:
     bail as binary data as soon as '\0' shows up (wrap response.Body with 'non-zero-Reader') if output is terminal
     disable json formatting if output is not terminal
     flag to disable json formatting?
+    syntax highlighting for headers and dumped json
 */
 
 type kvtype int
