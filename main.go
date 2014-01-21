@@ -417,7 +417,7 @@ func printRequestHeaders(useColor bool, request *http.Request) {
 		ct.ChangeColor(ct.Blue, false, ct.None, false)
 		fmt.Printf(" %s", request.Proto)
 	} else {
-		fmt.Printf("%s %s %s\n", request.Method, u, request.Proto)
+		fmt.Printf("%s %s %s", request.Method, u, request.Proto)
 	}
 
 	fmt.Println()
