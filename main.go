@@ -9,11 +9,13 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"os"
 	"reflect"
+	"sort"
 	"strings"
+
+	"github.com/daviddengcn/go-colortext"
 )
 
 /*
@@ -171,6 +173,7 @@ func main() {
 	onlyBody := flag.Bool("body", false, "only show body")
 	verbose := flag.Bool("v", false, "verbose")
 	auth := flag.String("auth", "", "username:password")
+	color := flag.Bool("color", true, "use color")
 
 	flag.Parse()
 
@@ -275,9 +278,8 @@ func main() {
 	}
 
 	if *verbose {
-		// TODO(dgryski): write my own here?
-		dump, _ := httputil.DumpRequest(req, true)
-		os.Stdout.Write(dump)
+		printRequestHeaders(*color, req)
+		os.Stdout.Write(body)
 		os.Stdout.Write([]byte{'\n', '\n'})
 	}
 
@@ -288,9 +290,7 @@ func main() {
 	}
 
 	if !*onlyBody {
-		dump, _ := httputil.DumpResponse(response, false)
-		os.Stdout.Write(dump)
-		os.Stdout.Write([]byte{'\n'})
+		printResponseHeaders(*color, response)
 	}
 
 	if !*onlyHeaders {
@@ -300,10 +300,172 @@ func main() {
 		if strings.HasPrefix(response.Header.Get("Content-type"), "application/json") {
 			var j interface{}
 			json.Unmarshal(body, &j)
-			body, _ = json.MarshalIndent(j, "", "    ")
+			if *color {
+				printJSON(1, j, false)
+			} else {
+				body, _ = json.MarshalIndent(j, "", "    ")
+				os.Stdout.Write(body)
+			}
+		} else {
+			os.Stdout.Write(body)
+		}
+		os.Stdout.Write([]byte{'\n', '\n'})
+	}
+}
+
+func printJSON(depth int, val interface{}, isKey bool) {
+
+	switch v := val.(type) {
+	case nil:
+		ct.ChangeColor(ct.Blue, false, ct.None, false)
+		fmt.Print("null")
+		ct.ResetColor()
+	case bool:
+		ct.ChangeColor(ct.Blue, false, ct.None, false)
+		if v {
+			fmt.Print("true")
+		} else {
+			fmt.Print("false")
+		}
+		ct.ResetColor()
+	case string:
+		if isKey {
+			ct.ChangeColor(ct.Blue, true, ct.None, false)
+		} else {
+			ct.ChangeColor(ct.Yellow, false, ct.None, false)
+		}
+		fmt.Printf("\"%s\"", v)
+		ct.ResetColor()
+	case float64:
+		ct.ChangeColor(ct.Blue, false, ct.None, false)
+		fmt.Printf("%g", v)
+		ct.ResetColor()
+	case map[string]interface{}:
+
+		var keys []string
+
+		for h, _ := range v {
+			keys = append(keys, h)
 		}
 
-		os.Stdout.Write(body)
-		os.Stdout.Write([]byte{'\n'})
+		sort.Strings(keys)
+
+		fmt.Println("{")
+		needNL := false
+		for _, key := range keys {
+			if needNL {
+				fmt.Print(",\n")
+			}
+			needNL = true
+			for i := 0; i < depth; i++ {
+				fmt.Print("    ")
+			}
+
+			printJSON(depth+1, key, true)
+			fmt.Print(": ")
+			printJSON(depth+1, v[key], false)
+		}
+		fmt.Println("")
+
+		for i := 0; i < depth-1; i++ {
+			fmt.Print("    ")
+		}
+		fmt.Print("}")
+
+	case []interface{}:
+		fmt.Println("[")
+		needNL := false
+		for _, e := range v {
+			if needNL {
+				fmt.Print(",\n")
+			}
+			needNL = true
+			for i := 0; i < depth; i++ {
+				fmt.Print("    ")
+			}
+
+			printJSON(depth+1, e, false)
+		}
+		fmt.Println("")
+
+		for i := 0; i < depth-1; i++ {
+			fmt.Print("    ")
+		}
+		fmt.Print("]")
+	default:
+		fmt.Println("unknown type:", reflect.TypeOf(v))
+	}
+}
+
+func printRequestHeaders(useColor bool, request *http.Request) {
+
+	u := request.URL.Path
+	if u == "" {
+		u = "/"
+	}
+
+	if request.URL.RawQuery != "" {
+		u += "?" + request.URL.RawQuery
+	}
+
+	if useColor {
+		ct.ChangeColor(ct.Green, false, ct.None, false)
+		fmt.Printf("%s", request.Method)
+		ct.ChangeColor(ct.Cyan, false, ct.None, false)
+		fmt.Printf(" %s", u)
+		ct.ChangeColor(ct.Blue, false, ct.None, false)
+		fmt.Printf(" %s", request.Proto)
+	} else {
+		fmt.Printf("%s %s %s\n", request.Method, u, request.Proto)
+	}
+
+	fmt.Println()
+	printHeaders(useColor, request.Header)
+	fmt.Println()
+}
+
+func printResponseHeaders(useColor bool, response *http.Response) {
+
+	if useColor {
+		ct.ChangeColor(ct.Blue, false, ct.None, false)
+		fmt.Printf("%s %s", response.Proto, response.Status[:3])
+		ct.ChangeColor(ct.Cyan, false, ct.None, false)
+		fmt.Printf("%s", response.Status[3:])
+	} else {
+		fmt.Printf("%s %s\n", response.Proto, response.Status)
+	}
+
+	fmt.Println()
+	printHeaders(useColor, response.Header)
+	fmt.Println()
+}
+
+func printHeaders(useColor bool, headers http.Header) {
+
+	var keys []string
+
+	for h, _ := range headers {
+		keys = append(keys, h)
+	}
+
+	sort.Strings(keys)
+
+	if useColor {
+		for _, k := range keys {
+			ct.ChangeColor(ct.Cyan, false, ct.None, false)
+			fmt.Printf("%s", k)
+			ct.ChangeColor(ct.Black, false, ct.None, false)
+			ct.ResetColor()
+			fmt.Printf(": ")
+			ct.ChangeColor(ct.Yellow, false, ct.None, false)
+			fmt.Printf("%s", headers[k][0])
+			ct.ResetColor()
+			fmt.Println()
+		}
+
+	} else {
+		for _, k := range keys {
+			fmt.Printf("%s: %s\n", k, headers[k][0])
+		}
 	}
 }
