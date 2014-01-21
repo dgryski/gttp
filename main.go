@@ -265,6 +265,7 @@ func main() {
 	defaultHeaders := map[string]string{
 		"User-Agent": "gttp http for gophers",
 		"Accept":     "*/*",
+		"Host":       req.URL.Host,
 	}
 
 	for k, v := range defaultHeaders {
