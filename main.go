@@ -190,7 +190,7 @@ func main() {
 	}
 
 	switch args[0] {
-	case "GET", "HEAD", "POST", "PUT", "DELETE":
+	case "GET", "HEAD", "POST", "PUT", "DELETE", "PURGE":
 		method = args[0]
 		args = args[1:]
 	}
