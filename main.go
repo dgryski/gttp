@@ -433,7 +433,7 @@ func printResponseHeaders(useColor bool, response *http.Response) {
 		ct.ChangeColor(ct.Cyan, false, ct.None, false)
 		fmt.Printf("%s", response.Status[3:])
 	} else {
-		fmt.Printf("%s %s\n", response.Proto, response.Status)
+		fmt.Printf("%s %s", response.Proto, response.Status)
 	}
 
 	fmt.Println()
