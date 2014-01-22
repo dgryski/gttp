@@ -21,11 +21,8 @@ import (
 /*
 TODO:
     @/path/to/file (+ setting Content-Type)
-    bail as binary data as soon as '\0' shows up (wrap response.Body with 'non-zero-Reader') if output is terminal
-    disable json formatting if output is not terminal
-    flag to disable json formatting?
-    read password from terminal if no password given
-    kv struct { key, value string }; headers []kv
+    disable json formatting if output is not terminal (isatty)
+    read password from terminal if no password given ( https://github.com/howeyc/gopass )
 */
 
 type kvtype int
