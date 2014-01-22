@@ -174,8 +174,21 @@ func main() {
 	verbose := flag.Bool("v", false, "verbose")
 	auth := flag.String("auth", "", "username:password")
 	color := flag.Bool("color", true, "use color")
+	noFormatting := flag.Bool("n", false, "no formatting/colour")
+	rawOutput := flag.Bool("raw", false, "raw output (no headers/formatting/color)")
 
 	flag.Parse()
+
+	if *noFormatting {
+		*color = false
+	}
+
+	if *rawOutput {
+		*onlyHeaders = false
+		*onlyBody = true
+		*color = false
+		*noFormatting = true
+	}
 
 	if flag.NArg() == 0 {
 		flag.Usage()
@@ -298,19 +311,47 @@ func main() {
 		body, _ = ioutil.ReadAll(response.Body)
 		response.Body.Close()
 
-		if strings.HasPrefix(response.Header.Get("Content-type"), "application/json") {
-			var j interface{}
-			json.Unmarshal(body, &j)
-			if *color {
-				printJSON(1, j, false)
+		if *rawOutput {
+			os.Stdout.Write(body)
+		} else if *noFormatting {
+
+			if bytes.IndexByte(body, 0) != -1 {
+				os.Stdout.Write([]byte(msgNoBinaryToTerminal))
 			} else {
-				body, _ = json.MarshalIndent(j, "", "    ")
 				os.Stdout.Write(body)
 			}
+
 		} else {
-			os.Stdout.Write(body)
+
+			// maybe do some formatting
+
+			switch {
+
+			case strings.HasPrefix(response.Header.Get("Content-type"), "application/json"):
+				var j interface{}
+				json.Unmarshal(body, &j)
+				if *color {
+					printJSON(1, j, false)
+				} else {
+					body, _ = json.MarshalIndent(j, "", "    ")
+					os.Stdout.Write(body)
+				}
+
+			case strings.HasPrefix(response.Header.Get("Content-type"), "text/"):
+				os.Stdout.Write(body)
+
+			case bytes.IndexByte(body, 0) != -1:
+				// at least one 0 byte, assume it's binary data :/
+				// silly, but it's the same heuristic as httpie
+				os.Stdout.Write([]byte(msgNoBinaryToTerminal))
+
+			default:
+				os.Stdout.Write(body)
+			}
+
+			// formatted output ends with two newlines
+			os.Stdout.Write([]byte{'\n', '\n'})
 		}
-		os.Stdout.Write([]byte{'\n', '\n'})
 	}
 }
 
@@ -470,3 +511,8 @@ func printHeaders(useColor bool, headers http.Header) {
 		}
 	}
 }
+
+const msgNoBinaryToTerminal = "\n\n" +
+	"+-----------------------------------------+\n" +
+	"| NOTE: binary data not shown in terminal |\n" +
+	"+-----------------------------------------+"
