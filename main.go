@@ -13,6 +13,7 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/daviddengcn/go-colortext"
@@ -373,7 +374,7 @@ func printJSON(depth int, val interface{}, isKey bool) {
 		} else {
 			ct.ChangeColor(ct.Yellow, false, ct.None, false)
 		}
-		fmt.Printf("\"%s\"", v)
+		fmt.Print(strconv.Quote(v))
 		ct.ResetColor()
 	case float64:
 		ct.ChangeColor(ct.Blue, false, ct.None, false)
