@@ -381,6 +381,11 @@ func printJSON(depth int, val interface{}, isKey bool) {
 		ct.ResetColor()
 	case map[string]interface{}:
 
+		if len(v) == 0 {
+			fmt.Print("{}")
+			break
+		}
+
 		var keys []string
 
 		for h, _ := range v {
@@ -412,6 +417,12 @@ func printJSON(depth int, val interface{}, isKey bool) {
 		fmt.Print("}")
 
 	case []interface{}:
+
+		if len(v) == 0 {
+			fmt.Print("[]")
+			break
+		}
+
 		fmt.Println("[")
 		needNL := false
 		for _, e := range v {
