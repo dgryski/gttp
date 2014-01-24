@@ -263,7 +263,7 @@ func main() {
 			}
 			body = []byte(values.Encode())
 		} else {
-			body, _ = json.MarshalIndent(bodyparams, "", "    ")
+			body, _ = json.Marshal(bodyparams)
 		}
 		req.Body = ioutil.NopCloser(bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
