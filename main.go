@@ -196,12 +196,14 @@ func main() {
 	args := flag.Args()
 
 	method := "GET"
+	methodProvided := false
 	if *postform {
 		method = "POST"
 	}
 
 	switch args[0] {
 	case "GET", "HEAD", "POST", "PUT", "DELETE", "PURGE":
+		methodProvided = true
 		method = args[0]
 		args = args[1:]
 	}
@@ -267,6 +269,9 @@ func main() {
 		}
 		req.Body = ioutil.NopCloser(bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
+		if !methodProvided {
+			req.Method = "POST"
+		}
 	}
 
 	if *postform {
