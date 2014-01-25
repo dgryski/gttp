@@ -6,11 +6,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strconv"
@@ -21,7 +24,7 @@ import (
 
 /*
 TODO:
-    @/path/to/file (+ setting Content-Type)
+    allow setting content-type for uploaded files
     disable json formatting if output is not terminal (isatty)
     read password from terminal if no password given ( https://github.com/howeyc/gopass )
 */
@@ -34,6 +37,7 @@ const (
 	kvpQuery
 	kvpBody
 	kvpJSON
+	kvpFile
 )
 
 type kvpairs struct {
@@ -41,6 +45,7 @@ type kvpairs struct {
 	query   map[string]string
 	body    map[string]string
 	js      map[string]string
+	file    map[string]string // filename, not content
 }
 
 func unescape(s string) string {
@@ -93,6 +98,8 @@ func parseKeyValue(keyvalue string) (kvtype, string, string) {
 				// found '=' , a form value
 				return kvpBody, string(k), unescape(keyvalue[i+1:])
 			}
+		} else if c == '@' {
+			return kvpFile, string(k), unescape(keyvalue[i+1:])
 		}
 		k = append(k, c)
 	}
@@ -110,6 +117,7 @@ func parseArgs(args []string) (*kvpairs, error) {
 		query:   make(map[string]string),
 		js:      make(map[string]string),
 		body:    make(map[string]string),
+		file:    make(map[string]string),
 	}
 
 	for _, arg := range args {
@@ -132,6 +140,9 @@ func parseArgs(args []string) (*kvpairs, error) {
 
 		case kvpJSON:
 			kvp.js[k] = v
+
+		case kvpFile:
+			kvp.file[k] = v
 		}
 	}
 
@@ -198,6 +209,7 @@ func main() {
 	method := "GET"
 	methodProvided := false
 	if *postform {
+		methodProvided = true
 		method = "POST"
 	}
 
@@ -230,6 +242,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	postFiles := false
 	bodyparams := make(map[string]interface{})
 	if kvp != nil {
 
@@ -253,29 +266,74 @@ func main() {
 			}
 			bodyparams[k] = vint
 		}
+
+		if len(kvp.file) > 0 {
+			postFiles = true
+		}
+
 	}
+
+	// assemble the body
 
 	var body []byte
 
-	if len(bodyparams) > 0 {
+	if postFiles {
+
+		// we have at least one file name
+		buf := &bytes.Buffer{}
+
+		// write the files
+		writer := multipart.NewWriter(buf)
+		for k, v := range kvp.file {
+			part, err := writer.CreateFormFile(k, filepath.Base(v))
+			if err != nil {
+				log.Fatal("unable to create form file:", err)
+			}
+			file, err := os.Open(v)
+			if err != nil {
+				log.Fatal("unable to open file:", err)
+			}
+			_, err = io.Copy(part, file)
+		}
+
+		// construct the extra body parameters
+		values := url.Values{}
+		for k, v := range bodyparams {
+			addValues(values, k, v)
+		}
+
+		// and write them into the body
+		for k, v := range values {
+			for _, vv := range v {
+				writer.WriteField(k, vv)
+			}
+		}
+
+		writer.Close()
+
+		body = buf.Bytes()
+		req.Header.Add("Content-Type", writer.FormDataContentType())
+
+	} else if len(bodyparams) > 0 {
+		// no files, but body params
 		if *postform {
 			values := url.Values{}
 			for k, v := range bodyparams {
 				addValues(values, k, v)
 			}
 			body = []byte(values.Encode())
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		} else {
 			body, _ = json.Marshal(bodyparams)
-		}
-		req.Body = ioutil.NopCloser(bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-		if !methodProvided {
-			req.Method = "POST"
+			req.Header.Set("Content-Type", "application/json")
 		}
 	}
 
-	if *postform {
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if body != nil {
+		req.Body = ioutil.NopCloser(bytes.NewReader(body))
+		if !methodProvided {
+			req.Method = "POST"
+		}
 	}
 
 	defaultHeaders := map[string]string{
