@@ -246,6 +246,7 @@ func main() {
 	postFiles := false
 	rawBodyFilename := "" // name of file
 	bodyparams := make(map[string]interface{})
+	fileparams := make(map[string]string)
 	if kvp != nil {
 
 		if kvp.query != nil {
@@ -273,8 +274,10 @@ func main() {
 		postFiles = len(kvp.file) > 0
 
 		for k, v := range kvp.file {
+			fileparams[k] = v
 			if k == "-" {
 				rawBodyFilename = v
+				// but we're no longer posting files
 				postFiles = false
 			}
 		}
@@ -342,10 +345,10 @@ func main() {
 		body = buf.Bytes()
 		req.Header.Add("Content-Type", writer.FormDataContentType())
 
-	} else if len(bodyparams) > 0 || len(kvp.file) > 0 {
+	} else if len(bodyparams) > 0 || len(fileparams) > 0 {
 
 		// add our files as body values
-		for k, v := range kvp.file {
+		for k, v := range fileparams {
 			file, err := os.Open(v)
 			if err != nil {
 				log.Fatal("unable to open file for body: ", err)
