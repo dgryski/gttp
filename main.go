@@ -185,6 +185,7 @@ func main() {
 	color := flag.Bool("color", true, "use color")
 	noFormatting := flag.Bool("n", false, "no formatting/colour")
 	rawOutput := flag.Bool("raw", false, "raw output (no headers/formatting/color)")
+	useMultipart := flag.Bool("m", true, "use multipart if uploading files")
 
 	flag.Parse()
 
@@ -243,6 +244,7 @@ func main() {
 	}
 
 	postFiles := false
+	rawBodyFilename := "" // name of file
 	bodyparams := make(map[string]interface{})
 	if kvp != nil {
 
@@ -267,17 +269,43 @@ func main() {
 			bodyparams[k] = vint
 		}
 
-		if len(kvp.file) > 0 {
-			postFiles = true
-		}
+		// if we have at least one file, maybe upload with multipart
+		postFiles = len(kvp.file) > 0
 
+		for k, v := range kvp.file {
+			if k == "-" {
+				rawBodyFilename = v
+				postFiles = false
+			}
+		}
 	}
 
 	// assemble the body
 
 	var body []byte
 
-	if postFiles {
+	if rawBodyFilename != "" {
+		if len(kvp.file) > 1 {
+			log.Fatal("only one input file allowed when setting raw body")
+		}
+
+		if len(bodyparams) > 0 {
+			log.Println("extra body parameters ignored when setting raw body")
+		}
+
+		file, err := os.Open(rawBodyFilename)
+		if err != nil {
+			log.Fatal("unable to open file for body: ", err)
+		}
+
+		body, err = ioutil.ReadAll(file)
+		if err != nil {
+			log.Fatal("error reading body contents: ", err)
+		}
+
+		req.Header.Add("Content-Type", "application/octet-stream")
+
+	} else if postFiles && *useMultipart {
 
 		// we have at least one file name
 		buf := &bytes.Buffer{}
@@ -287,11 +315,11 @@ func main() {
 		for k, v := range kvp.file {
 			part, err := writer.CreateFormFile(k, filepath.Base(v))
 			if err != nil {
-				log.Fatal("unable to create form file:", err)
+				log.Fatal("unable to create form file: ", err)
 			}
 			file, err := os.Open(v)
 			if err != nil {
-				log.Fatal("unable to open file:", err)
+				log.Fatal("unable to open file: ", err)
 			}
 			_, err = io.Copy(part, file)
 		}
@@ -314,8 +342,23 @@ func main() {
 		body = buf.Bytes()
 		req.Header.Add("Content-Type", writer.FormDataContentType())
 
-	} else if len(bodyparams) > 0 {
-		// no files, but body params
+	} else if len(bodyparams) > 0 || len(kvp.file) > 0 {
+
+		// add our files as body values
+		for k, v := range kvp.file {
+			file, err := os.Open(v)
+			if err != nil {
+				log.Fatal("unable to open file for body: ", err)
+			}
+
+			val, err := ioutil.ReadAll(file)
+			if err != nil {
+				log.Fatal("error reading body contents: ", err)
+			}
+			// string so that we get file contents and not base64 encoded contents
+			bodyparams[k] = string(val)
+		}
+
 		if *postform {
 			values := url.Values{}
 			for k, v := range bodyparams {
