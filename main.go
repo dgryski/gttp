@@ -9,11 +9,11 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"mime/multipart"
+	//"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
+	//"path/filepath"
 	"reflect"
 	"sort"
 	"strconv"
@@ -282,37 +282,15 @@ func main() {
 		// we have at least one file name
 		buf := &bytes.Buffer{}
 
-		// write the files
-		writer := multipart.NewWriter(buf)
-		for k, v := range kvp.file {
-			part, err := writer.CreateFormFile(k, filepath.Base(v))
-			if err != nil {
-				log.Fatal("unable to create form file:", err)
-			}
+		for _, v := range kvp.file {
 			file, err := os.Open(v)
 			if err != nil {
 				log.Fatal("unable to open file:", err)
 			}
-			_, err = io.Copy(part, file)
+			_, err = io.Copy(buf, file)
 		}
-
-		// construct the extra body parameters
-		values := url.Values{}
-		for k, v := range bodyparams {
-			addValues(values, k, v)
-		}
-
-		// and write them into the body
-		for k, v := range values {
-			for _, vv := range v {
-				writer.WriteField(k, vv)
-			}
-		}
-
-		writer.Close()
-
 		body = buf.Bytes()
-		req.Header.Add("Content-Type", writer.FormDataContentType())
+		req.Header.Add("Content-Type", "application/octet-stream")
 
 	} else if len(bodyparams) > 0 {
 		// no files, but body params
