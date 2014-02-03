@@ -108,9 +108,6 @@ func parseKeyValue(keyvalue string) (kvtype, string, string) {
 }
 
 func parseArgs(args []string) (*kvpairs, error) {
-	if len(args) == 0 {
-		return nil, nil
-	}
 
 	kvp := kvpairs{
 		headers: make(map[string]string),
@@ -244,42 +241,39 @@ func main() {
 	}
 
 	postFiles := false
-	rawBodyFilename := "" // name of file
+	rawBodyFilename := "" // name of file for raw body
 	bodyparams := make(map[string]interface{})
-	fileparams := make(map[string]string)
-	if kvp != nil {
 
-		if kvp.query != nil {
-			queryparams := req.URL.Query()
-			for k, v := range kvp.query {
-				queryparams.Add(k, v)
-			}
-			req.URL.RawQuery = queryparams.Encode()
+	// update the raw query if we have any new parameters
+	if len(kvp.query) > 0 {
+		queryparams := req.URL.Query()
+		for k, v := range kvp.query {
+			queryparams.Add(k, v)
 		}
+		req.URL.RawQuery = queryparams.Encode()
+	}
 
-		for k, v := range kvp.body {
-			bodyparams[k] = v
+	for k, v := range kvp.body {
+		bodyparams[k] = v
+	}
+
+	for k, v := range kvp.js {
+		var vint interface{}
+		err := json.Unmarshal([]byte(v), &vint)
+		if err != nil {
+			log.Fatalf("invalid json: ", v)
 		}
+		bodyparams[k] = vint
+	}
 
-		for k, v := range kvp.js {
-			var vint interface{}
-			err := json.Unmarshal([]byte(v), &vint)
-			if err != nil {
-				log.Fatalf("invalid json: ", v)
-			}
-			bodyparams[k] = vint
-		}
+	// if we have at least one file, maybe upload with multipart
+	postFiles = len(kvp.file) > 0
 
-		// if we have at least one file, maybe upload with multipart
-		postFiles = len(kvp.file) > 0
-
-		for k, v := range kvp.file {
-			fileparams[k] = v
-			if k == "-" {
-				rawBodyFilename = v
-				// but we're no longer posting files
-				postFiles = false
-			}
+	for k, v := range kvp.file {
+		if k == "-" {
+			rawBodyFilename = v
+			// but we're no longer posting files
+			postFiles = false
 		}
 	}
 
@@ -345,10 +339,10 @@ func main() {
 		body = buf.Bytes()
 		req.Header.Add("Content-Type", writer.FormDataContentType())
 
-	} else if len(bodyparams) > 0 || len(fileparams) > 0 {
+	} else if len(bodyparams) > 0 || len(kvp.file) > 0 {
 
 		// add our files as body values
-		for k, v := range fileparams {
+		for k, v := range kvp.file {
 			file, err := os.Open(v)
 			if err != nil {
 				log.Fatal("unable to open file for body: ", err)
@@ -392,10 +386,8 @@ func main() {
 		req.Header.Set(k, v)
 	}
 
-	if kvp != nil {
-		for k, v := range kvp.headers {
-			req.Header.Set(k, v)
-		}
+	for k, v := range kvp.headers {
+		req.Header.Set(k, v)
 	}
 
 	if *verbose {
