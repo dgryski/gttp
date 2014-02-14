@@ -428,7 +428,9 @@ func main() {
 
 			case strings.HasPrefix(response.Header.Get("Content-type"), "application/json"):
 				var j interface{}
-				json.Unmarshal(body, &j)
+				d := json.NewDecoder(bytes.NewReader(body))
+				d.UseNumber()
+				d.Decode(&j)
 				if *color {
 					printJSON(1, j, false)
 				} else {
@@ -477,9 +479,9 @@ func printJSON(depth int, val interface{}, isKey bool) {
 		}
 		fmt.Print(strconv.Quote(v))
 		ct.ResetColor()
-	case float64:
+	case json.Number:
 		ct.ChangeColor(ct.Blue, false, ct.None, false)
-		fmt.Printf("%g", v)
+		fmt.Print(v)
 		ct.ResetColor()
 	case map[string]interface{}:
 
