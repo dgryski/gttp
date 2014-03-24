@@ -42,8 +42,8 @@ const (
 
 type kvpairs struct {
 	headers map[string]string
-	query   map[string]string
-	body    map[string]string
+	query   map[string][]string
+	body    map[string][]string
 	js      map[string]string
 	file    map[string]string // filename, not content
 }
@@ -111,9 +111,9 @@ func parseArgs(args []string) (*kvpairs, error) {
 
 	kvp := kvpairs{
 		headers: make(map[string]string),
-		query:   make(map[string]string),
+		query:   make(map[string][]string),
 		js:      make(map[string]string),
-		body:    make(map[string]string),
+		body:    make(map[string][]string),
 		file:    make(map[string]string),
 	}
 
@@ -130,10 +130,12 @@ func parseArgs(args []string) (*kvpairs, error) {
 			kvp.headers[k] = v
 
 		case kvpQuery:
-			kvp.query[k] = v
+			vs := kvp.query[k]
+			kvp.query[k] = append(vs, v)
 
 		case kvpBody:
-			kvp.body[k] = v
+			vs := kvp.query[k]
+			kvp.body[k] = append(vs, v)
 
 		case kvpJSON:
 			kvp.js[k] = v
@@ -247,8 +249,10 @@ func main() {
 	// update the raw query if we have any new parameters
 	if len(kvp.query) > 0 {
 		queryparams := req.URL.Query()
-		for k, v := range kvp.query {
-			queryparams.Add(k, v)
+		for k, vs := range kvp.query {
+			for _, v := range vs {
+				queryparams.Add(k, v)
+			}
 		}
 		req.URL.RawQuery = queryparams.Encode()
 	}
