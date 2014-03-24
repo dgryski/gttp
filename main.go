@@ -86,18 +86,16 @@ func parseKeyValue(keyvalue string) (kvtype, string, string) {
 			if keyvalue[i+1] == '=' {
 				// found ':=', a raw json param
 				return kvpJSON, string(k), unescape(keyvalue[i+2:])
-			} else {
-				// found ':' , a header
-				return kvpHeader, string(k), unescape(keyvalue[i+1:])
 			}
+			// found ':' , a header
+			return kvpHeader, string(k), unescape(keyvalue[i+1:])
 		} else if c == '=' {
 			if keyvalue[i+1] == '=' {
 				// found '==', a query param
 				return kvpQuery, string(k), unescape(keyvalue[i+2:])
-			} else {
-				// found '=' , a form value
-				return kvpBody, string(k), unescape(keyvalue[i+1:])
 			}
+			// found '=' , a form value
+			return kvpBody, string(k), unescape(keyvalue[i+1:])
 		} else if c == '@' {
 			return kvpFile, string(k), unescape(keyvalue[i+1:])
 		}
@@ -162,7 +160,7 @@ func addValues(values url.Values, key string, vals interface{}) {
 	case float64:
 		values.Add(key, fmt.Sprintf("%g", val))
 	case map[string]interface{}:
-		for k, _ := range val {
+		for k := range val {
 			addValues(values, key, k)
 		}
 	case []interface{}:
@@ -265,7 +263,7 @@ func main() {
 		var vint interface{}
 		err := json.Unmarshal([]byte(v), &vint)
 		if err != nil {
-			log.Fatalf("invalid json: ", v)
+			log.Fatal("invalid json: ", v)
 		}
 		bodyparams[k] = vint
 	}
@@ -496,7 +494,7 @@ func printJSON(depth int, val interface{}, isKey bool) {
 
 		var keys []string
 
-		for h, _ := range v {
+		for h := range v {
 			keys = append(keys, h)
 		}
 
@@ -602,7 +600,7 @@ func printHeaders(useColor bool, headers http.Header) {
 
 	var keys []string
 
-	for h, _ := range headers {
+	for h := range headers {
 		keys = append(keys, h)
 	}
 
