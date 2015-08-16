@@ -83,14 +83,14 @@ func parseKeyValue(keyvalue string) (kvtype, string, string) {
 		}
 		// TODO(dgryski): make sure we don't overstep the array
 		if c == ':' {
-			if keyvalue[i+1] == '=' {
+			if i+1 < len(keyvalue) && keyvalue[i+1] == '=' {
 				// found ':=', a raw json param
 				return kvpJSON, string(k), unescape(keyvalue[i+2:])
 			}
 			// found ':' , a header
 			return kvpHeader, string(k), unescape(keyvalue[i+1:])
 		} else if c == '=' {
-			if keyvalue[i+1] == '=' {
+			if i+1 < len(keyvalue) && keyvalue[i+1] == '=' {
 				// found '==', a query param
 				return kvpQuery, string(k), unescape(keyvalue[i+2:])
 			}
