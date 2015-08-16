@@ -256,7 +256,11 @@ func main() {
 	}
 
 	for k, v := range kvp.body {
-		bodyparams[k] = v
+		if len(v) == 1 {
+			bodyparams[k] = v[0]
+		} else {
+			bodyparams[k] = v
+		}
 	}
 
 	for k, v := range kvp.js {
