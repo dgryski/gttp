@@ -377,6 +377,8 @@ func main() {
 
 	if body != nil {
 		req.Body = ioutil.NopCloser(bytes.NewReader(body))
+		req.ContentLength = int64(len(body))
+		req.Header.Set("Content-Length", strconv.Itoa(len(body)))
 		if !methodProvided {
 			req.Method = "POST"
 		}
