@@ -240,7 +240,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	postFiles := false
+	var postFiles bool
 	rawBodyFilename := "" // name of file for raw body
 	bodyparams := make(map[string]interface{})
 
@@ -265,8 +265,7 @@ func main() {
 
 	for k, v := range kvp.js {
 		var vint interface{}
-		err := json.Unmarshal([]byte(v), &vint)
-		if err != nil {
+		if err = json.Unmarshal([]byte(v), &vint); err != nil {
 			log.Fatal("invalid json: ", v)
 		}
 		bodyparams[k] = vint
@@ -296,10 +295,11 @@ func main() {
 			log.Println("extra body parameters ignored when setting raw body")
 		}
 
-		file, err := os.Open(rawBodyFilename)
-		if err != nil {
+		var file *os.File
+		if file, err = os.Open(rawBodyFilename); err != nil {
 			log.Fatal("unable to open file for body: ", err)
 		}
+		defer file.Close()
 
 		body, err = ioutil.ReadAll(file)
 		if err != nil {
@@ -316,15 +316,18 @@ func main() {
 		// write the files
 		writer := multipart.NewWriter(buf)
 		for k, v := range kvp.file {
-			part, err := writer.CreateFormFile(k, filepath.Base(v))
-			if err != nil {
+			var part io.Writer
+			if part, err = writer.CreateFormFile(k, filepath.Base(v)); err != nil {
 				log.Fatal("unable to create form file: ", err)
 			}
-			file, err := os.Open(v)
-			if err != nil {
+			var file *os.File
+			if file, err = os.Open(v); err != nil {
 				log.Fatal("unable to open file: ", err)
 			}
-			_, err = io.Copy(part, file)
+			defer file.Close()
+			if _, err = io.Copy(part, file); err != nil {
+				log.Fatal("unable to write file: ", err)
+			}
 		}
 
 		// construct the extra body parameters
@@ -349,13 +352,14 @@ func main() {
 
 		// add our files as body values
 		for k, v := range kvp.file {
-			file, err := os.Open(v)
-			if err != nil {
+			var file *os.File
+			if file, err = os.Open(v); err != nil {
 				log.Fatal("unable to open file for body: ", err)
 			}
+			defer file.Close()
 
-			val, err := ioutil.ReadAll(file)
-			if err != nil {
+			var val []byte
+			if val, err = ioutil.ReadAll(file); err != nil {
 				log.Fatal("error reading body contents: ", err)
 			}
 			// string so that we get file contents and not base64 encoded contents
