@@ -183,6 +183,7 @@ func main() {
 	noFormatting := flag.Bool("n", false, "no formatting/colour")
 	rawOutput := flag.Bool("raw", false, "raw output (no headers/formatting/color)")
 	useMultipart := flag.Bool("m", true, "use multipart if uploading files")
+	timeout := flag.Duration("t", 0, "timeout (default none)")
 
 	flag.Parse()
 
@@ -200,6 +201,10 @@ func main() {
 	if flag.NArg() == 0 {
 		flag.Usage()
 		return
+	}
+
+	if *timeout != 0 {
+		http.DefaultClient.Timeout = *timeout
 	}
 
 	args := flag.Args()
