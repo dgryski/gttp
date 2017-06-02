@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -184,6 +185,8 @@ func main() {
 	rawOutput := flag.Bool("raw", false, "raw output (no headers/formatting/color)")
 	useMultipart := flag.Bool("m", true, "use multipart if uploading files")
 	timeout := flag.Duration("t", 0, "timeout (default none)")
+	insecure := flag.Bool("k", false, "allow insecure TLS")
+	useEnv := flag.Bool("e", true, "use proxies from environment")
 
 	flag.Parse()
 
@@ -205,6 +208,16 @@ func main() {
 
 	if *timeout != 0 {
 		http.DefaultClient.Timeout = *timeout
+	}
+
+	if *insecure {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+	}
+
+	if !*useEnv {
+		http.DefaultTransport.(*http.Transport).Proxy = nil
 	}
 
 	args := flag.Args()
