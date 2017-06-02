@@ -212,7 +212,7 @@ func main() {
 	}
 
 	switch args[0] {
-	case "GET", "HEAD", "POST", "PUT", "DELETE", "PURGE":
+	case "GET", "HEAD", "POST", "PUT", "DELETE", "PURGE", "TRACE", "OPTIONS", "CONNECT", "PATCH":
 		methodProvided = true
 		method = args[0]
 		args = args[1:]
