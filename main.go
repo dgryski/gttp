@@ -238,7 +238,7 @@ func main() {
 
 	// add http:// if we need it
 	if !strings.HasPrefix(args[0], "http://") && !strings.HasPrefix(args[0], "https://") {
-		args[0] = "http://" + args[0]
+		args[0] = "https://" + args[0]
 	}
 	u := args[0]
 	args = args[1:]
