@@ -1,8 +1,8 @@
 gttp: http for gophers
 ----------------------
 
-This program is a minimal clone of https://github.com/jkbr/httpie, "A cURL-like
-tool for humans."
+This program is a minimal clone of https://github.com/httpie/httpie, "A
+modern, user-friendly command-line HTTP client for the API era."
 
 The reason for writing my own is that python's 100ms+ startup time was really
 starting to bug me.
