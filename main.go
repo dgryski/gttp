@@ -444,7 +444,7 @@ func main() {
 		} else if *noFormatting {
 
 			if bytes.IndexByte(body, 0) != -1 {
-				os.Stdout.Write([]byte(msgNoBinaryToTerminal))
+				os.Stdout.WriteString(msgNoBinaryToTerminal)
 			} else {
 				os.Stdout.Write(body)
 			}
@@ -473,7 +473,7 @@ func main() {
 			case bytes.IndexByte(body, 0) != -1:
 				// at least one 0 byte, assume it's binary data :/
 				// silly, but it's the same heuristic as httpie
-				os.Stdout.Write([]byte(msgNoBinaryToTerminal))
+				os.Stdout.WriteString(msgNoBinaryToTerminal)
 
 			default:
 				os.Stdout.Write(body)
