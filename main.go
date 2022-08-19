@@ -8,7 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -319,7 +318,7 @@ func main() {
 		}
 		defer file.Close()
 
-		body, err = ioutil.ReadAll(file)
+		body, err = io.ReadAll(file)
 		if err != nil {
 			log.Fatal("error reading body contents: ", err)
 		}
@@ -377,7 +376,7 @@ func main() {
 			defer file.Close()
 
 			var val []byte
-			if val, err = ioutil.ReadAll(file); err != nil {
+			if val, err = io.ReadAll(file); err != nil {
 				log.Fatal("error reading body contents: ", err)
 			}
 			// string so that we get file contents and not base64 encoded contents
@@ -398,7 +397,7 @@ func main() {
 	}
 
 	if body != nil {
-		req.Body = ioutil.NopCloser(bytes.NewReader(body))
+		req.Body = io.NopCloser(bytes.NewReader(body))
 		req.ContentLength = int64(len(body))
 		req.Header.Set("Content-Length", strconv.Itoa(len(body)))
 		if !methodProvided {
@@ -437,7 +436,7 @@ func main() {
 	}
 
 	if !*onlyHeaders {
-		body, _ = ioutil.ReadAll(response.Body)
+		body, _ = io.ReadAll(response.Body)
 		response.Body.Close()
 
 		if *rawOutput {
