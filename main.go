@@ -391,7 +391,10 @@ func main() {
 			body = []byte(values.Encode())
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		} else {
-			body, _ = json.Marshal(bodyparams)
+			body, err = json.Marshal(bodyparams)
+			if err != nil {
+				log.Fatal("error marshalling request body params:", err)
+			}
 			req.Header.Set("Content-Type", "application/json")
 		}
 	}
@@ -436,7 +439,10 @@ func main() {
 	}
 
 	if !*onlyHeaders {
-		body, _ = io.ReadAll(response.Body)
+		body, err = io.ReadAll(response.Body)
+		if err != nil {
+			log.Fatal("error reading response body:", err)
+		}
 		response.Body.Close()
 
 		if *rawOutput {
@@ -459,11 +465,17 @@ func main() {
 				var j interface{}
 				d := json.NewDecoder(bytes.NewReader(body))
 				d.UseNumber()
-				d.Decode(&j)
+				if err := d.Decode(&j); err != nil {
+					log.Fatal("error unmarshalling response body:", err)
+				}
 				if *color {
 					printJSON(1, j, false)
 				} else {
-					body, _ = json.MarshalIndent(j, "", "    ")
+					body, err = json.MarshalIndent(j, "", "    ")
+					if err != nil {
+						log.Fatal("error re-marshalling response body:", err)
+					}
+
 					os.Stdout.Write(body)
 				}
 
