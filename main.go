@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/daviddengcn/go-colortext"
+	ct "github.com/daviddengcn/go-colortext"
 )
 
 /*
